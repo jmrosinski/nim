@@ -1,0 +1,33 @@
+# Makefile.serial.cpu (for NIM dynamics compiled serially for the CPU)
+
+include ../macros.make
+
+FFLAGS += $(OMPFLAG) $(MICFLAGS)
+
+%.o: %.F90
+	$(CPP) $(CPP_FLAGS) $(MODDIRS) $*.F90 > $*.f90
+	$(FCserial) $(GPTLINCLUDE) -c $(FFLAGS) $(SFLAGS) $(MODDIRS) $*.f90
+
+vdmints.o: solveiThLS.F90 vdmints.F90
+	$(CPP) $(CPP_FLAGS) $(MODDIRS) $*.F90 > $*.f90
+	$(FCserial) -c $(FFLAGS) $(SFLAGS) $(MODDIRS) $(INLINE) $*.f90
+
+vdmints0.o: solveiThLS0.o vdmints0.F90
+	$(CPP) $(CPP_FLAGS) $(MODDIRS) $*.F90 > $*.f90
+	$(FCserial) $(GPTLINCLUDE) -c $(FFLAGS) $(SFLAGS) $(MODDIRS) $(INLINE) $*.f90
+vdmintv.o: solveiThLS2.o vdmintv.F90 
+	$(CPP) $(CPP_FLAGS) $(MODDIRS) $*.F90 > $*.f90
+	$(FCserial) -c $(FFLAGS) $(SFLAGS) $(MODDIRS) $(INLINE) $*.f90
+vdmints3.o: solveiThLS3.o vdmints3.F90
+	$(CPP) $(CPP_FLAGS) $(MODDIRS) $*.F90 > $*.f90
+	$(FCserial) $(GPTLINCLUDE) -c $(FFLAGS) $(SFLAGS) $(MODDIRS) $(INLINE) $*.f90
+vdmintsv5.o: solveiThLS5.o vdmintsv5.F90
+	$(CPP) $(CPP_FLAGS) $(MODDIRS) $*.F90 > $*.f90
+	$(FCserial) -c $(FFLAGS) $(SFLAGS) $(MODDIRS) $(INLINE) $*.f90
+# The lapack stuff is only needed for initialization, and -O3 causes problems
+# on MIC, so lower the opt level
+
+nim_lapack.o: nim_lapack.f
+	$(FCserial) -c $(FFLAGS) $(SFLAGS) $(MODDIRS) -O1 $<
+
+include DEPENDENCIES
