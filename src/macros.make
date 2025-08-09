@@ -1,4 +1,4 @@
-ROOTDIR   = /data1/nim/src
+ROOTDIR   = $(PWD)
 ARCH      = theiapgi
 HW        = gpu
 PAR       = serial
