@@ -1,0 +1,100 @@
+# Any files listed in CPUOBJS are built during a non-GPU build. CPUOBJS objects
+# are not build during a GPU build.
+
+CPUOBJS =                \
+  solveiThLS.o           \
+  solveiThLS0.o          \
+  solveiThLS2.o          \
+  solveiThLS3.o          \
+  vdmints.o              \
+  vdmints0.o             \
+  vdmints3.o             \
+  vdmintv.o              \
+  solveiThLS5.o          \
+  vdmintsv5.o
+
+# ACCOBJS contain CPP #define the appropriate solver to get around compiler
+# limitations, it is used for cray to avoid specific rules for each build
+ACCOBJS =                \
+  vdmints.o              \
+  vdmints0.o             \
+  vdmints3.o             \
+  vdmintv.o              \
+  vdmintsv5.o
+
+# Any files listed in COMOBJS are built with F2C-ACC translation during a GPU
+# build. COMOBJS objects are built without F2C-ACC during a non-GPU build.
+# Any files listed in COMOBJS are built with F2C-ACC translation during a GPU
+# build. COMOBJS objects are built without F2C-ACC during a non-GPU build.
+
+COMOBJS =                \
+  diag.o                 \
+  flux.o                 \
+  preForce.o             \
+  force.o                \
+  post_trisol.o          \
+  pre_trisol.o           \
+  pstadv.o               \
+  RHStendencies.o        \
+  RKdiff.o               \
+  SaveFlux.o             \
+  GPUinit.o              \
+  sponge.o               \
+  trisol.o               \
+  TimeDiff.o             \
+  vdmfinish.o            \
+  vdn.o                  \
+  ZeroTendencies.o
+
+# Any files listed in GPUOBJS are built with F2C-ACC translation during a GPU
+# build. GPUOBJS objects are not built during a non-GPU build.
+
+GPUOBJS =                \
+  vdmints0_solve0.o      \
+  vdmints3_solve3.o      \
+  vdmints_solve.o        \
+  vdmintv_solve2.o       \
+  vdmintsv5_solve5.o
+
+# Any files listed in SEROBJS will always be built without processing by either
+# SMS or F2C-ACC.
+
+SEROBJS =                \
+  module_alloc.o         \
+  filename.o             \
+  GetLastError.o         \
+  infnan.o               \
+  amtx.o                 \
+  nim_lapack.o           \
+  read1Dr4.o             \
+  read1Di4.o             \
+  read2Di4.o
+
+# Any files listed in SMSOBJS are built with SMS translation during a parallel
+# build. SMSOBJS objects are built without SMS during a serial build.
+
+SMSOBJS =                \
+  barrier.o              \
+  preExchange.o          \
+  postExchange.o         \
+  core_setup.o           \
+  datetime.o             \
+  dyntnc.o               \
+  globals.o              \
+  init.o                 \
+  input.o                \
+  module_die.o           \
+  module_header.o        \
+  module_its2time.o      \
+  module_restart.o       \
+  nim.o                  \
+  output.o               \
+  perturb.o              \
+  print_taskinfo.o       \
+  read_permute.o         \
+  start.o                \
+  stop.o                 \
+  taskinfo_comm.o        \
+  vdm.o                  \
+  globalutils.o
+

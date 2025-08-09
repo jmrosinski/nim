@@ -1,0 +1,43 @@
+RM = rm -f
+
+# Unfortunately cpp token _OPENMP must be defined manually since in SMS mode cpp is run separately
+ifeq ($(OPENMP),yes)
+  BUILD_DEFINES += -D_OPENMP
+endif
+
+# Set "DIVIDES_IN_SOLVEITHLS=no" to replace divisions in solveiThLS*() 
+# with multiplies by reciprocals.  Faster on all architectures but not 
+# yet validated.  
+DIVIDES_IN_SOLVEITHLS = yes
+ifeq ($(DIVIDES_IN_SOLVEITHLS),no)
+  BUILD_DEFINES += -DSOLVEITHLS_RECIPROCAL
+endif
+
+# USE_GPTL=yes means we'll link to the library rather than use dummy objects
+# In this case GPTLINCLUDE was set in macros.make
+
+ifeq ($(USE_GPTL),yes)
+  GPTLOBJS =
+else
+  GPTLINCLUDE = -I$(SRCDIR)/dummygptl
+  GPTLOBJS = $(shell ls $(SRCDIR)/dummygptl/*.o)
+endif
+
+SMSFLAGS = -I $(SMS)/include
+
+FFLAGS        = $(DYNFLAGS)
+UTILSDIR      = ../utils
+ICOSIODIR     = ../icosio
+CNTLDIR       = ../cntl
+MODDIRS       = -I$(UTILSDIR) -I$(ICOSIODIR) -I$(CNTLDIR)
+ifeq ($(PAR),parallel)
+  FCX    = $(FC)
+  SFLAGS = $(SMSFLAGS)
+else
+  FCX    = $(FCserial)
+  SFLAGS =
+endif
+
+ICOSIOOBJS     = $(shell ls $(ICOSIODIR)/*.o)
+UTILSOBJS      = $(UTILSDIR)/taskinfo.o $(UTILSDIR)/namelistdata.o $(UTILSDIR)/wrappers.o
+NIMEXE = $(BINDIR)/nim

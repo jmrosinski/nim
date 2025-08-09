@@ -1,0 +1,468 @@
+#   The examples below are testable due to use of YAML formatting.  Please 
+#   follow YAML rules when modifying the examples below.  
+cases:
+  - case: 1
+    description: serial build write tasks not allowed
+    build: serial
+    namelist_settings:
+      ComputeTasks: 1
+      cpu_cores_per_node: 12
+      max_compute_tasks_per_node: 1
+      omp_threads_per_compute_task: 1
+      num_write_tasks: 0
+      max_write_tasks_per_node: 0
+      max_compute_tasks_per_mic: 0
+      omp_threads_per_mic_mpi_task: 240
+      root_own_node: T
+    returned_values:    
+      actual_max_compute_tasks_per_node: 1
+      actual_max_write_tasks_per_node: 0
+      total_cpu_cores: 12 
+      total_mpi_tasks: 1 
+      total_nodes: 1 
+      mpi_tasks_per_node: 1 
+      write_nodes: 0 
+      do_nothing_tasks: 0 
+      tasklist_compute: (0)
+      tasklist_write: ()
+      tasklist_donothing: ()
+      nodelist: ()
+  - case: 2
+    description: serial build, 6 OpenMP threads, write tasks not allowed
+    build: serial
+    namelist_settings:
+      ComputeTasks: 1
+      cpu_cores_per_node: 12
+      max_compute_tasks_per_node: 1
+      omp_threads_per_compute_task: 6
+      num_write_tasks: 0
+      max_write_tasks_per_node: 0
+      max_compute_tasks_per_mic: 0
+      omp_threads_per_mic_mpi_task: 240
+      root_own_node: T
+    returned_values:    
+      actual_max_compute_tasks_per_node: 1
+      actual_max_write_tasks_per_node: 0
+      total_cpu_cores: 12 
+      total_mpi_tasks: 1 
+      total_nodes: 1 
+      mpi_tasks_per_node: 1 
+      write_nodes: 0 
+      do_nothing_tasks: 0 
+      tasklist_compute: (0)
+      tasklist_write: ()
+      tasklist_donothing: ()
+      nodelist: ()
+  - case: 3
+    description: parallel build, root shares a node, no OpenMP, no write tasks
+    build: parallel
+    namelist_settings:
+      ComputeTasks: 10
+      cpu_cores_per_node: 12
+      max_compute_tasks_per_node: 12
+      omp_threads_per_compute_task: 1
+      num_write_tasks: 0
+      max_write_tasks_per_node: 0
+      max_compute_tasks_per_mic: 0
+      omp_threads_per_mic_mpi_task: 240
+      root_own_node: F
+    returned_values:    
+      actual_max_compute_tasks_per_node: 10
+      actual_max_write_tasks_per_node: 0
+      total_cpu_cores: 12
+      total_mpi_tasks: 10
+      total_nodes: 1
+      mpi_tasks_per_node: 10
+      write_nodes: 0
+      do_nothing_tasks: 0
+      tasklist_compute: (0-9)
+      tasklist_write: ()
+      tasklist_donothing: ()
+      nodelist: (0,0,0,0,0,0,0,0,0,0)
+  - case: 4
+    description: parallel build, root shares a node, no OpenMP, no write tasks
+    build: parallel
+    namelist_settings:
+      ComputeTasks: 10
+      cpu_cores_per_node: 12
+      max_compute_tasks_per_node: 5
+      omp_threads_per_compute_task: 1
+      num_write_tasks: 0
+      max_write_tasks_per_node: 0
+      max_compute_tasks_per_mic: 0
+      omp_threads_per_mic_mpi_task: 240
+      root_own_node: F
+    returned_values:    
+      actual_max_compute_tasks_per_node: 5
+      actual_max_write_tasks_per_node: 0
+      total_cpu_cores: 24
+      total_mpi_tasks: 10
+      total_nodes: 2
+      mpi_tasks_per_node: 5
+      write_nodes: 0
+      do_nothing_tasks: 0
+      tasklist_compute: (0-9)
+      tasklist_write: ()
+      tasklist_donothing: ()
+      nodelist: (0,0,0,0,0,1,1,1,1,1)
+  - case: 5
+    description: parallel build, root shares a node, no OpenMP, no write tasks
+    build: parallel
+    namelist_settings:
+      ComputeTasks: 10
+      cpu_cores_per_node: 6
+      max_compute_tasks_per_node: 6
+      omp_threads_per_compute_task: 1
+      num_write_tasks: 0
+      max_write_tasks_per_node: 0
+      max_compute_tasks_per_mic: 0
+      omp_threads_per_mic_mpi_task: 240
+      root_own_node: F
+    returned_values:    
+      actual_max_compute_tasks_per_node: 6
+      actual_max_write_tasks_per_node: 0
+      total_cpu_cores: 12
+      total_mpi_tasks: 12
+      total_nodes: 2
+      mpi_tasks_per_node: 6
+      write_nodes: 0
+      do_nothing_tasks: 2
+      tasklist_compute: (0-9)
+      tasklist_write: ()
+      tasklist_donothing: (10,11)
+      nodelist: (0,0,0,0,0,0,1,1,1,1,1,1)
+  - case: 6
+    description: parallel build, root on own node, no OpenMP, no write tasks
+    build: parallel
+    namelist_settings:
+      ComputeTasks: 10
+      cpu_cores_per_node: 12
+      max_compute_tasks_per_node: 12
+      omp_threads_per_compute_task: 1
+      num_write_tasks: 0
+      max_write_tasks_per_node: 0
+      max_compute_tasks_per_mic: 0
+      omp_threads_per_mic_mpi_task: 240
+      root_own_node: T
+    returned_values:    
+      actual_max_compute_tasks_per_node: 9
+      actual_max_write_tasks_per_node: 0
+      total_cpu_cores: 24
+      total_mpi_tasks: 18
+      total_nodes: 2
+      mpi_tasks_per_node: 9
+      write_nodes: 0
+      do_nothing_tasks: 8
+      tasklist_compute: (0,9-17)
+      tasklist_write: ()
+      tasklist_donothing: (1-8)
+      nodelist: (0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1)
+  - case: 7
+    description: parallel build, root on own node, no OpenMP, no write tasks
+    build: parallel
+    namelist_settings:
+      ComputeTasks: 10
+      cpu_cores_per_node: 12
+      max_compute_tasks_per_node: 5
+      omp_threads_per_compute_task: 1
+      num_write_tasks: 0
+      max_write_tasks_per_node: 0
+      max_compute_tasks_per_mic: 0
+      omp_threads_per_mic_mpi_task: 240
+      root_own_node: T
+    returned_values:    
+      actual_max_compute_tasks_per_node: 5
+      actual_max_write_tasks_per_node: 0
+      total_cpu_cores: 36
+      total_mpi_tasks: 15
+      total_nodes: 3
+      mpi_tasks_per_node: 5
+      write_nodes: 0
+      do_nothing_tasks: 5
+      tasklist_compute: (0,5-13)
+      tasklist_write: ()
+      tasklist_donothing: (1-4,14)
+      nodelist: (0,0,0,0,0,1,1,1,1,1,2,2,2,2,2)
+  - case: 8
+    description: parallel build, root on own node, no OpenMP, no write tasks
+    build: parallel
+    namelist_settings:
+      ComputeTasks: 10
+      cpu_cores_per_node: 6
+      max_compute_tasks_per_node: 6
+      omp_threads_per_compute_task: 1
+      num_write_tasks: 0
+      max_write_tasks_per_node: 0
+      max_compute_tasks_per_mic: 0
+      omp_threads_per_mic_mpi_task: 240
+      root_own_node: T
+    returned_values:    
+      actual_max_compute_tasks_per_node: 6
+      actual_max_write_tasks_per_node: 0
+      total_cpu_cores: 18
+      total_mpi_tasks: 18
+      total_nodes: 3
+      mpi_tasks_per_node: 6
+      write_nodes: 0
+      do_nothing_tasks: 8
+      tasklist_compute: (0,6-14)
+      tasklist_write: ()
+      tasklist_donothing: (1-5,15-17)
+      nodelist: (0,0,0,0,0,0,1,1,1,1,1,1,2,2,2,2,2,2)
+  - case: 9
+    description: parallel build, root shares a node, no OpenMP, 1 write task
+    build: parallel
+    namelist_settings:
+      ComputeTasks: 10
+      cpu_cores_per_node: 12
+      max_compute_tasks_per_node: 12
+      omp_threads_per_compute_task: 1
+      num_write_tasks: 1
+      max_write_tasks_per_node: 1
+      max_compute_tasks_per_mic: 0
+      omp_threads_per_mic_mpi_task: 240
+      root_own_node: F
+    returned_values:    
+      actual_max_compute_tasks_per_node: 10
+      actual_max_write_tasks_per_node: 1
+      total_cpu_cores: 24
+      total_mpi_tasks: 20
+      total_nodes: 2
+      mpi_tasks_per_node: 10
+      write_nodes: 1
+      do_nothing_tasks: 9
+      tasklist_compute: (0-9)
+      tasklist_write: (10)
+      tasklist_donothing: (11-19)
+      nodelist: (0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1)
+  - case: 10
+    description: parallel build, root shares a node, no OpenMP, 1 write task
+    build: parallel
+    namelist_settings:
+      ComputeTasks: 10
+      cpu_cores_per_node: 12
+      max_compute_tasks_per_node: 5
+      omp_threads_per_compute_task: 1
+      num_write_tasks: 1
+      max_write_tasks_per_node: 1
+      max_compute_tasks_per_mic: 0
+      omp_threads_per_mic_mpi_task: 240
+      root_own_node: F
+    returned_values:    
+      actual_max_compute_tasks_per_node: 5
+      actual_max_write_tasks_per_node: 1
+      total_cpu_cores: 36
+      total_mpi_tasks: 15
+      total_nodes: 3
+      mpi_tasks_per_node: 5
+      write_nodes: 1
+      do_nothing_tasks: 4
+      tasklist_compute: (0-9)
+      tasklist_write: (10)
+      tasklist_donothing: (11-14)
+      nodelist: (0,0,0,0,0,1,1,1,1,1,2,2,2,2,2)
+  - case: 11
+    description: parallel build, root shares a node, no OpenMP, 1 write task
+    build: parallel
+    namelist_settings:
+      ComputeTasks: 10
+      cpu_cores_per_node: 6
+      max_compute_tasks_per_node: 6
+      omp_threads_per_compute_task: 1
+      num_write_tasks: 1
+      max_write_tasks_per_node: 1
+      max_compute_tasks_per_mic: 0
+      omp_threads_per_mic_mpi_task: 240
+      root_own_node: F
+    returned_values:    
+      actual_max_compute_tasks_per_node: 6
+      actual_max_write_tasks_per_node: 1
+      total_cpu_cores: 18
+      total_mpi_tasks: 18
+      total_nodes: 3
+      mpi_tasks_per_node: 6
+      write_nodes: 1
+      do_nothing_tasks: 7
+      tasklist_compute: (0-9)
+      tasklist_write: (12)
+      tasklist_donothing: (10,11,13-17)
+      nodelist: (0,0,0,0,0,0,1,1,1,1,1,1,2,2,2,2,2,2)
+  - case: 12
+    description: parallel build, root on own node, no OpenMP, 2x2 write tasks
+    build: parallel
+    namelist_settings:
+      ComputeTasks: 10
+      cpu_cores_per_node: 12
+      max_compute_tasks_per_node: 12
+      omp_threads_per_compute_task: 1
+      num_write_tasks: 4
+      max_write_tasks_per_node: 2
+      max_compute_tasks_per_mic: 0
+      omp_threads_per_mic_mpi_task: 240
+      root_own_node: T
+    returned_values:    
+      actual_max_compute_tasks_per_node: 9
+      actual_max_write_tasks_per_node: 2
+      total_cpu_cores: 48
+      total_mpi_tasks: 36
+      total_nodes: 4
+      mpi_tasks_per_node: 9
+      write_nodes: 2
+      do_nothing_tasks: 22
+      tasklist_compute: (0,9-17)
+      tasklist_write: (18,19,27,28)
+      tasklist_donothing: (1-8,20-26,29-35)
+      nodelist: (0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3)
+  - case: 13
+    description: parallel build, root on own node, no OpenMP, 6x2 write tasks
+                 Note that max_write_tasks_per_node is automatically reduced 
+                 since the requested value is larger than 
+                 max_compute_tasks_per_node.  Thus we end up with 4 write 
+                 tasks on each of 3 write nodes (4x3).  
+    build: parallel
+    namelist_settings:
+      ComputeTasks: 10
+      cpu_cores_per_node: 12
+      max_compute_tasks_per_node: 5
+      omp_threads_per_compute_task: 1
+      num_write_tasks: 12
+      max_write_tasks_per_node: 6
+      max_compute_tasks_per_mic: 0
+      omp_threads_per_mic_mpi_task: 240
+      root_own_node: T
+    returned_values:    
+      actual_max_compute_tasks_per_node: 5
+      actual_max_write_tasks_per_node: 4
+      total_cpu_cores: 72
+      total_mpi_tasks: 30
+      total_nodes: 6
+      mpi_tasks_per_node: 5
+      write_nodes: 3
+      do_nothing_tasks: 8
+      tasklist_compute: (0,5-13)
+      tasklist_write: (15-18,20-23,25-28)
+      tasklist_donothing: (1-4,14,19,24,29)
+      nodelist: (0,0,0,0,0,1,1,1,1,1,2,2,2,2,2,3,3,3,3,3,4,4,4,4,4,5,5,5,5,5)
+  - case: 14
+    description: parallel build, root on own node, no OpenMP, 4x1 write tasks
+    build: parallel
+    namelist_settings:
+      ComputeTasks: 10
+      cpu_cores_per_node: 6
+      max_compute_tasks_per_node: 6
+      omp_threads_per_compute_task: 1
+      num_write_tasks: 4
+      max_write_tasks_per_node: 4
+      max_compute_tasks_per_mic: 0
+      omp_threads_per_mic_mpi_task: 240
+      root_own_node: T
+    returned_values:    
+      actual_max_compute_tasks_per_node: 6
+      actual_max_write_tasks_per_node: 4
+      total_cpu_cores: 24
+      total_mpi_tasks: 24
+      total_nodes: 4
+      mpi_tasks_per_node: 6
+      write_nodes: 1
+      do_nothing_tasks: 10
+      tasklist_compute: (0,6-14)
+      tasklist_write: (18-21)
+      tasklist_donothing: (1-5,15-17,22,23)
+      nodelist: (0,0,0,0,0,0,1,1,1,1,1,1,2,2,2,2,2,2,3,3,3,3,3,3)
+  - case: 15
+    description: parallel build, root on own node, MPIxOpenMP=2x6, no write tasks
+    build: parallel
+    namelist_settings:
+      ComputeTasks: 2
+      cpu_cores_per_node: 12
+      max_compute_tasks_per_node: 2
+      omp_threads_per_compute_task: 6
+      num_write_tasks: 0
+      max_write_tasks_per_node: 0
+      max_compute_tasks_per_mic: 0
+      omp_threads_per_mic_mpi_task: 240
+      root_own_node: T
+    returned_values:    
+      actual_max_compute_tasks_per_node: 1
+      actual_max_write_tasks_per_node: 0
+      total_cpu_cores: 24
+      total_mpi_tasks: 2
+      total_nodes: 2
+      mpi_tasks_per_node: 1
+      write_nodes: 0
+      do_nothing_tasks: 0
+      tasklist_compute: (0,1)
+      tasklist_write: ()
+      tasklist_donothing: ()
+      nodelist: (0,1)
+  - case: 16
+    description: parallel build, root on own node, MPIxOpenMP=3x6, no write tasks
+    build: parallel
+    namelist_settings:
+      ComputeTasks: 3
+      cpu_cores_per_node: 12
+      max_compute_tasks_per_node: 2
+      omp_threads_per_compute_task: 6
+      num_write_tasks: 0
+      max_write_tasks_per_node: 0
+      max_compute_tasks_per_mic: 0
+      omp_threads_per_mic_mpi_task: 240
+      root_own_node: T
+    returned_values:    
+      actual_max_compute_tasks_per_node: 2
+      actual_max_write_tasks_per_node: 0
+      total_cpu_cores: 24
+      total_mpi_tasks: 4
+      total_nodes: 2
+      mpi_tasks_per_node: 2
+      write_nodes: 0
+      do_nothing_tasks: 1
+      tasklist_compute: (0,2,3)
+      tasklist_write: ()
+      tasklist_donothing: (1)
+      nodelist: (0,0,1,1)
+  - case: 17
+    description: parallel build, root on own node, MPIxOpenMP=2x5, no write tasks
+                 Under-subscription of cores is legal.  
+    build: parallel
+    namelist_settings:
+      ComputeTasks: 2
+      cpu_cores_per_node: 12
+      max_compute_tasks_per_node: 12
+      omp_threads_per_compute_task: 5
+      num_write_tasks: 0
+      max_write_tasks_per_node: 0
+      max_compute_tasks_per_mic: 0
+      omp_threads_per_mic_mpi_task: 240
+      root_own_node: T
+    returned_values:    
+      actual_max_compute_tasks_per_node: 1
+      actual_max_write_tasks_per_node: 0
+      total_cpu_cores: 24
+      total_mpi_tasks: 2
+      total_nodes: 2
+      mpi_tasks_per_node: 1
+      write_nodes: 0
+      do_nothing_tasks: 0
+      tasklist_compute: (0,1)
+      tasklist_write: ()
+      tasklist_donothing: ()
+      nodelist: (0,1)
+#TODO:  add "expected-to-fail" cases to unit test suite
+# - case: 18
+#   description: parallel build, MPIxOpenMP with too many cores requested (ERROR)
+#                Use cpu_cores_per_node > number of CPU cores per node to 
+#                intentionally oversubscribe a node.  
+#   build: parallel
+#   namelist_settings:
+#     ComputeTasks: 10
+#     cpu_cores_per_node: 12
+#     max_compute_tasks_per_node: 10
+#     omp_threads_per_compute_task: 2
+#     num_write_tasks: 0
+#     max_write_tasks_per_node: 0
+#     max_compute_tasks_per_mic: 0
+#     omp_threads_per_mic_mpi_task: 240
+#     root_own_node: T
+#   returned_values:    
+#     ERROR: task_info, max_compute_tasks_per_node*omp_threads_per_compute_task exceeds cpu_cores_per_node

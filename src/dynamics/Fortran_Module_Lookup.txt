@@ -1,0 +1,2 @@
+kinds  ../cntl/kinds.f90
+readnamelist ../cntl/ReadNamelist.f90

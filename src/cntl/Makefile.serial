@@ -1,0 +1,9 @@
+# cntl Makefile for serial NIM compiled for the CPU
+
+include ../macros.make
+
+%.o: %.F90
+	$(CPP) $(CPP_FLAGS) $< > $*.f90
+	$(FCserial) -c -I$(UTILSDIR) $(DYNFLAGS) $(MICFLAGS) $*.f90
+
+include DEPENDENCIES

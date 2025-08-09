@@ -1,0 +1,68 @@
+SUBROUTINE solveiThLS2(nob,nbf,b1,b2,amtx)
+  use kinds, only: rt
+  use ReadNamelist, only: nz
+  IMPLICIT NONE
+
+  integer, intent(IN)     :: nbf,nob
+  REAL(rt), intent(INOUT) :: b1(nz,nob),b2(nz,nob)
+  real(rt), intent(IN)    :: amtx(nz,nbf,nob+1)
+  REAL                    :: wk1(nz),wk2(nz)
+  INTEGER                 :: i,j,k
+!DIR$ ASSUME_ALIGNED amtx:64, b1:64, b2:64
+ 
+#ifdef FINEGRAINED_TIMING
+  integer :: ret
+  integer :: handle = 0
+#include <gptl.inc>
+
+  ret = gptlstart_handle ('solveiThLS2', handle)
+#endif
+
+  DO i = 1, nbf
+    ! when j=1, amtx is 1.0. Process this separately, so the next loop
+    ! can proceed from j=2.
+    !
+!dir$ vector aligned
+    do k=1,nz                  ! j=1 loop
+      wk1(k) = b1(k,i)
+      wk2(k) = b2(k,i)
+    end do
+    DO j = 2, nob - i + 1       ! start from j=2. j=1 processed above
+!dir$ vector aligned
+      do k=1,nz
+        wk1(k) = wk1(k) + amtx(k,i+j-1,i) * b1(k,i+j-1)
+        wk2(k) = wk2(k) + amtx(k,i+j-1,i) * b2(k,i+j-1)
+      enddo
+    ENDDO
+    ! When j=1, amtx(..,i,i) should be 1.0. So, process j=i iteration
+    ! separately now, and other iterations in the next loop
+    !
+!dir$ vector aligned
+    do k=1,nz
+      b1(k,i) = b1(k,i) - amtx(k,i,nbf+1) * wk1(k)
+      b2(k,i) = b2(k,i) - amtx(k,i,nbf+1) * wk2(k)
+    enddo
+    DO j=i+1,nob            ! j starts from j+1 (j=i processed above)
+!dir$ vector aligned
+      do k=1,nz
+        b1(k,j) = b1(k,j) - amtx(k,i,nbf+1) * wk1(k) * amtx(k,j,i)
+        b2(k,j) = b2(k,j) - amtx(k,i,nbf+1) * wk2(k) * amtx(k,j,i)
+      end do
+    END DO
+  END DO
+ 
+  DO j = nbf, 1, -1
+!dir$ vector aligned
+    do k=1,nz
+      b1(k,j) = b1(k,j) / amtx(k,j,j)
+      b2(k,j) = b2(k,j) / amtx(k,j,j)
+    end do
+    DO i = 1, j-1
+!dir$ vector aligned
+      do k=1,nz
+        b1(k,i) = b1(k,i) - b1(k,j)*amtx(k,i,j)
+        b2(k,i) = b2(k,i) - b2(k,j)*amtx(k,i,j)
+      end do
+    END DO
+  END DO
+END SUBROUTINE solveiThLS2
