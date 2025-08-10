@@ -91,14 +91,14 @@ end if
 nv2=nvi+1
 nv3=nvi+2
 #ifdef INNER_TIMERS
-!$acc parallel private(ret) num_workers(PAR_WRK) vector_length(VEC_LEN), &
+!$acc parallel private(ret) num_gangs(60) num_workers(3) vector_length(32), &
 !$acc&         copyin(ipn_handle, kloop1_handle, kloop2_handle, k3_handle, isn1_handle, &
 !$acc&                isn2_handle, scalar_handle, solvei_handle)
 #else
 !$acc parallel private(ret) num_workers(PAR_WRK) vector_length(VEC_LEN)
 #endif
 
-!$acc loop gang worker private(rhs1,rhs2,rhs3,Tgt1,Tgt2,Tgt3)
+!$acc loop gang private(rhs1,rhs2,rhs3,Tgt1,Tgt2,Tgt3)
 
 !$OMP PARALLEL DO PRIVATE(mythread,ret,k,rhs1,rhs2,rhs3,isn,tgtc,tgt1,tgt2, &
 !$OMP                     tgt3,isp,xyc1,xyc2) SCHEDULE(runtime)
@@ -109,7 +109,7 @@ do ipn=ips,ipe
 #endif
 !!$acc cache(rhs1,rhs2,rhs3)
 !$acc cache(rhs1,rhs2)
-!$acc loop vector
+!$acc loop worker vector
   do k=1,NZ-1
 
     rhs1(k,1) = rp(k  ,prox(1         ,ipn)) - rp(k,ipn)
@@ -183,10 +183,11 @@ CALL solveiThLS3(nob,nbf,rhs1,rhs2,rhs3,amtx1(1,1,ipn))
 #endif
 
 !JR Defining temporary variables xyc1 and xyc2 prevents ifort from swapping the loops below
+!$acc loop worker private(xyc1,xyc2)
   do isn = 1,nprox(ipn)
     xyc1 = xyc(1,isn,ipn)
     xyc2 = xyc(2,isn,ipn)
-!$acc loop vector
+!$acc loop vector private(tgtc)
     do k=1,NZ-1
 !      ret = gptlstart_gpu(kloop2_handle)
       tgtc = ( zc(k,isn,ipn)-zm(k,ipn) )
@@ -220,7 +221,7 @@ CALL solveiThLS3(nob,nbf,rhs1,rhs2,rhs3,amtx1(1,1,ipn))
   ret = gptlstart_gpu(isn2_handle)
 #endif
 
-!!$acc loop seq
+!$acc loop worker private(isp)
   do isn = 1,nprox(ipn)
     isp=mod(isn,nprox(ipn))+1
 !$acc loop vector
