@@ -91,7 +91,7 @@ end if
 nv2=nvi+1
 nv3=nvi+2
 #ifdef INNER_TIMERS
-!$acc parallel private(ret) num_gangs(60) num_workers(3) vector_length(32), &
+!$acc parallel private(ret) num_workers(3) vector_length(32), &
 !$acc&         copyin(ipn_handle, kloop1_handle, kloop2_handle, k3_handle, isn1_handle, &
 !$acc&                isn2_handle, scalar_handle, solvei_handle)
 #else
