@@ -16,7 +16,7 @@
 #define _OP_ /
 #endif
 
-SUBROUTINE solveiThLS0(nob,nbf,b,amtx,ipn,ips)
+SUBROUTINE solveiThLS0(nob,nbf,b,amtx,ipn,ips,startk)
 !**************************************************************************
 !
 !       This file contains the classes that implement the least square fitting. 
@@ -37,6 +37,7 @@ INTEGER,PARAMETER      ::  nz = 96
 INTEGER, INTENT(IN)    :: nbf,nob,ipn,ips
 real(rt), INTENT(INOUT):: b   (    NZ      ,nob      )
 real(rt), INTENT(IN)   :: amtx(0:NZ-1,nob,nob+1)
+integer, intent(in)    :: startk
 real(rt)               :: wk
 INTEGER                :: k
 
@@ -51,8 +52,8 @@ INTEGER                :: k
 !$acc routine(solveiThLS0) vector
 
 !JR Need to verify that this vectorizes
-!$acc loop vector
-  do k=1,NZ-1
+!$acc loop vector private(wk)
+  do k=startk,min(NZ-1,startk+32-1)
       wk =                b(k,1) &
           + amtx(k,2,1) * b(k,2) &
           + amtx(k,3,1) * b(k,3) &

@@ -47,7 +47,9 @@ real(rt)               :: xyc1, xyc2  ! xyc temporaries
 
 integer                :: mythread  ! thread number when FINEGRAINED_TIMING defined
 integer                :: ret       ! GPTL return code when FINEGRAINED_TIMING defined
-integer                :: vdmints0_handle, ipn_handle
+logical, save          :: first = .true.
+integer, save          :: vdmints0_handle, ipn_handle, solvei_handle
+integer                :: startk
 
 #ifdef FINEGRAINED_TIMING
 #include <gptl.inc>
@@ -57,14 +59,21 @@ integer                :: vdmints0_handle, ipn_handle
 
 !$acc routine(solveiThLS0) vector
 
-!$acc parallel private(ret) copyout(vdmints0_handle, ipn_handle)
-  ret = gptlinit_handle_gpu ('vdmints0', vdmints0_handle)
-  ret = gptlinit_handle_gpu ('vdmints0_ipn', ipn_handle)
-  ret = gptlstart_gpu(vdmints0_handle)
+  if (first) then
+    first = .false.
+!$acc parallel private(ret) copyout(vdmints0_handle, ipn_handle, solvei_handle)
+    ret = gptlinit_handle_gpu ('vdmints0', vdmints0_handle)
+    ret = gptlinit_handle_gpu ('vdmints0_ipn', ipn_handle)
+    ret = gptlinit_handle_gpu ('vdmints0_solvei', solvei_handle)
+!$acc end parallel
+  end if
+
+!$acc parallel private(ret) copyin(vdmints0_handle)
+  ret = gptlstart_gpu (vdmints0_handle)
 !$acc end parallel
 
 !DIR$ ASSUME_ALIGNED ca4k:64, ca4p:64, sedgvar:64
-!$acc parallel private(ret) num_workers(PAR_WRK) vector_length(VEC_LEN) copyin(ipn_handle)
+!$acc parallel private(ret) num_workers(PAR_WRK) vector_length(VEC_LEN) copyin(ipn_handle,solvei_handle)
 !$acc loop gang private(rhs,Tgt)
 !$OMP PARALLEL DO PRIVATE(mythread,ret,k,rhs,i,isn,tgtc,tgt,isp,ism,xyc1,xyc2) SCHEDULE(runtime)
 do ipn=ips,ipe
@@ -76,7 +85,7 @@ do ipn=ips,ipe
     ret = gptlstart_handle ('vdmints0_inside', handle)
   end if
 #endif
-!$acc loop vector
+!$acc loop worker vector
   do k=2,NZ
     rhs(k,1) = w(k-1,prox(1         ,ipn)) - w(k-1,ipn)
     rhs(k,2) = w(k-1,prox(2         ,ipn)) - w(k-1,ipn)
@@ -93,14 +102,19 @@ do ipn=ips,ipe
     rhs(1,i)=0._rt
   enddo
 
-  CALL solveiThLS0(nob,nbf,rhs,amtx2(0,1,ipn),ipn,ips)
+  ret = gptlstart_gpu (solvei_handle)
+!$acc loop worker
+  do startk=1,NZ-1,32
+    CALL solveiThLS0(nob,nbf,rhs,amtx2(0,1,ipn),ipn,ips,startk)
+  end do
+  ret = gptlstop_gpu (solvei_handle)
 
 !JR Defining temporary variables xyc1 and xyc2 prevents ifort from swapping the k and isn loops below
-!$acc loop seq
+!$acc loop worker private(xyc1,xyc2)
   do isn = 1,nprox(ipn)
     xyc1 = xyc(1,isn,ipn)
     xyc2 = xyc(2,isn,ipn)
-!$acc loop vector
+!$acc loop vector private(tgtc)
     do k=2,NZ ! Tgt(nz) is calculated for ks0=0
       tgtc = ( (.5_rt*(zc(k-1,isn,ipn) + zc(k,isn,ipn)))-z(k-1,ipn) )
       Tgt(k-1,isn) = xyc1*( rhs(k,1)*xyc1  &
@@ -113,7 +127,7 @@ do ipn=ips,ipe
     enddo !k-loop
   end do  ! isn-loop
 
-!$acc loop seq
+!$acc loop worker private(isp,ism)
   do isn = 1,nprox(ipn)
      isp=mod(isn,nprox(ipn))+1
      ism=isn-1

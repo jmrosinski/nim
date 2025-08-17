@@ -52,6 +52,7 @@ real(rt)               :: Tgt2 (NZ,npp)
 real(rt)               :: Tgt3 (NZ,npp)
 INTEGER                :: ipn,k,isn,isp,nv2,nv3
 real(rt)               :: xyc1, xyc2  ! xyc temporaries
+integer                :: startk
 
 integer :: mythread  ! thread number when FINEGRAINED_TIMING defined
 integer :: ret
@@ -91,7 +92,7 @@ end if
 nv2=nvi+1
 nv3=nvi+2
 #ifdef INNER_TIMERS
-!$acc parallel private(ret) num_gangs(60) num_workers(3) vector_length(32), &
+!$acc parallel private(ret) num_gangs(10242) num_workers(3) vector_length(32), &
 !$acc&         copyin(ipn_handle, kloop1_handle, kloop2_handle, k3_handle, isn1_handle, &
 !$acc&                isn2_handle, scalar_handle, solvei_handle)
 #else
@@ -109,8 +110,10 @@ do ipn=ips,ipe
 #endif
 !!$acc cache(rhs1,rhs2,rhs3)
 !$acc cache(rhs1,rhs2)
-!$acc loop worker vector
-  do k=1,NZ-1
+!$acc loop worker
+  do startk=1,NZ-1,32
+!$acc loop vector
+  do k=startk,min(NZ-1,startk+32-1)
 
     rhs1(k,1) = rp(k  ,prox(1         ,ipn)) - rp(k,ipn)
     rhs1(k,2) = rp(k  ,prox(2         ,ipn)) - rp(k,ipn)
@@ -139,6 +142,7 @@ do ipn=ips,ipe
     rhs3(k,7) = trp(k+1,prox(4         ,ipn)) - trp(k,ipn)
     rhs3(k,8) = trp(k+1,prox(nprox(ipn),ipn)) - trp(k,ipn)
     rhs3(k,9) = ca4k(k)*trp(k,ipn)+ca4p(k)*trp(k+1,ipn) - trp(k,ipn)
+  enddo !k-loop
   enddo !k-loop
 #ifdef INNER_TIMERS
   ret = gptlstop_gpu (kloop1_handle)
@@ -176,7 +180,10 @@ do ipn=ips,ipe
   ret = gptlstop_gpu (scalar_handle)
   ret = gptlstart_gpu(solvei_handle)
 #endif
-CALL solveiThLS3(nob,nbf,rhs1,rhs2,rhs3,amtx1(1,1,ipn))
+!$acc loop worker
+  do startk=1,NZ,32
+    CALL solveiThLS3(nob,nbf,rhs1,rhs2,rhs3,amtx1(1,1,ipn),startk)
+  end do
 #ifdef INNER_TIMERS
   ret = gptlstop_gpu(solvei_handle)
   ret = gptlstart_gpu(isn1_handle)

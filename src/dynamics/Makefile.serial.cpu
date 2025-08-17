@@ -17,7 +17,7 @@ vdmints0.o: solveiThLS0.o vdmints0.F90
 	$(FCserial) $(GPTLINCLUDE) -c $(FFLAGS) $(SFLAGS) $(MODDIRS) $(INLINE) $*.f90
 vdmintv.o: solveiThLS2.o vdmintv.F90 
 	$(CPP) $(CPP_FLAGS) $(MODDIRS) $*.F90 > $*.f90
-	$(FCserial) -c $(FFLAGS) $(SFLAGS) $(MODDIRS) $(INLINE) $*.f90
+	$(FCserial) $(GPTLINCLUDE) -c $(FFLAGS) $(SFLAGS) $(MODDIRS) $(INLINE) $*.f90
 vdmints3.o: solveiThLS3.o vdmints3.F90
 	$(CPP) $(CPP_FLAGS) $(MODDIRS) $*.F90 > $*.f90
 	$(FCserial) $(GPTLINCLUDE) -c $(FFLAGS) $(SFLAGS) $(MODDIRS) $(INLINE) $*.f90

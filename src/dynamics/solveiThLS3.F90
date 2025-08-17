@@ -16,7 +16,7 @@
 #define _OP_ /
 #endif
 
-SUBROUTINE solveiThLS3(nob,nbf,b1,b2,b3,amtx)
+SUBROUTINE solveiThLS3(nob,nbf,b1,b2,b3,amtx,startk)
 
 use kinds, only: rt
 !use ReadNamelist, only: nz
@@ -27,6 +27,7 @@ IMPLICIT NONE
 integer, intent(IN)    :: nbf,nob
 real(rt), INTENT(INOUT):: b1(NZ,nob),b2(NZ,nob),b3(NZ,nob)
 real(rt), intent(IN)   :: amtx(NZ,nbf,nob+1)
+integer, intent(in)    :: startk
 real(rt)               :: wk
 INTEGER                :: k
 #ifdef FINEGRAINED_TIMING
@@ -39,7 +40,7 @@ INTEGER                :: k
 !$acc routine(solveiThLS3) vector
 !$acc loop vector
 !dir$ vector aligned
-  do k=1,NZ
+  do k=startk,min(NZ,startk+32-1)
       wk =                b1(k,1) &
           + amtx(k,2,1) * b1(k,2) &
           + amtx(k,3,1) * b1(k,3) &

@@ -23,6 +23,8 @@ subroutine vdmintv(u,v,sedgvar,bedgvar,nvars,amtx1,nbf,npp,ims,ime,nob,&
 !
 !**********************************************************************
 
+use gptl
+use gptl_acc
 use kinds, only: rt
 use ReadNamelist, only: nz
 implicit none
@@ -48,12 +50,29 @@ real(rt)               :: Tgtu(NZ,npp)
 real(rt)               :: Tgtv(NZ,npp)
 INTEGER                :: ipn,k,isn,isp,n,ipp1,ipp2,ipp3,ipp4,ipp5,ippn
 real(rt)               :: xyc1, xyc2  ! xyc temporaries
+integer                :: startk
+integer, save          :: vdmintv_handle, ipn_handle, solvei_handle
 
 !DIR$ ASSUME_ALIGNED zm:64, ca4k:64, ca4p:64, u:64, v:64, sedgvar:64, amtx1:64
 !$acc routine(solveiThLS2) vector
 
 integer :: mythread  ! thread number when FINEGRAINED_TIMING defined
 integer :: ret       ! GPTL return code when FINEGRAINED_TIMING defined
+
+logical, save :: first = .true.
+
+if (first) then
+  first = .false.
+!$acc parallel private(ret) copyout(vdmintv_handle, ipn_handle, solvei_handle)
+  ret = gptlinit_handle_gpu ('vdmintv',        vdmintv_handle)
+  ret = gptlinit_handle_gpu ('vdmintv_ipn',    ipn_handle)
+  ret = gptlinit_handle_gpu ('vdmintv_solvei', solvei_handle)
+!$acc end parallel
+end if
+!$acc parallel private(ret) copyin(vdmintv_handle)
+  ret = gptlstart_gpu (vdmintv_handle)
+!$acc end parallel
+
 #ifdef FINEGRAINED_TIMING
 #include <gptl.inc>
   integer :: handle = 0
@@ -61,13 +80,14 @@ integer :: ret       ! GPTL return code when FINEGRAINED_TIMING defined
   ret = gptlstart ('vdmintv_outside')
 #endif
 
-!$acc parallel num_workers(PAR_WRK) vector_length(VEC_LEN)
+!$acc parallel num_workers(PAR_WRK) vector_length(VEC_LEN) copyin(ipn_handle, solvei_handle)
 !$acc loop gang worker private(Tgtu,Tgtv,rhsu,rhsv)
 !$OMP PARALLEL DO PRIVATE(mythread,ret,n,ipp1,ipp2,ipp3,ipp4,ipp5,ippn,k, &
 !$OMP                     rhsu,rhsv,isn,tgtu,tgtv,isp,xyc1,xyc2) &
 !$OMP             SCHEDULE(runtime)
 do ipn=ips,ipe
 !$acc cache(tgtu,tgtv)
+  ret = gptlstart_gpu (ipn_handle)
 #ifdef FINEGRAINED_TIMING
   mythread = omp_get_thread_num ()
   if (mythread == 0) then
@@ -124,7 +144,9 @@ do ipn=ips,ipe
   rhsv(k+1,8) =-sn(n,ipn)*u(k+1,ippn)+cs(n,ipn)*v(k+1,ippn) - v(k,ipn)
   rhsv(k+1,9) = ca4k(k)*v(k,ipn)+ca4p(k)*v(k+1,ipn) - v(k,ipn)
 
+  ret = gptlstart_gpu(solvei_handle)
   CALL solveiThLS2(nob,nbf,rhsu,rhsv,amtx1(1,1,1,ipn),ipn,ips)
+  ret = gptlstop_gpu(solvei_handle)
 
 !JR Defining temporary variables xyc1 and xyc2 prevents ifort from swapping the loops below
 !$acc loop seq
@@ -187,9 +209,13 @@ do ipn=ips,ipe
   end if
 #endif
 
+  ret = gptlstop_gpu (ipn_handle)
 enddo !ipn-loop
 !$acc end parallel
 !$OMP END PARALLEL DO
+!$acc parallel private(ret) copyin(vdmintv_handle)
+ret = gptlstop_gpu (vdmintv_handle)
+!$acc end parallel
 #ifdef FINEGRAINED_TIMING
 ret = gptlstop ('vdmintv_outside')
 #endif

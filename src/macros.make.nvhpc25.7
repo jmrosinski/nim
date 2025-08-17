@@ -31,7 +31,7 @@ CPP_FLAGS  = $(CPP_OPTS) $(GPTLINCLUDE) $(DEFINES) $(BUILD_DEFINES)
 FC         = nvfortran
 FCserial   = $(FC)
 FCfrontend = nvfortran
-ACCFLAGS = -acc -Minfo=accel -gpu=ccnative,maxregcount:96 -cuda
+ACCFLAGS = -acc -Minfo=accel -gpu=cc61,mem:separate,maxregcount:96 -cuda
 FFLAGS        = $(DYNFLAGS)
 UTILSDIR      = ../utils
 ICOSIODIR     = ../icosio
