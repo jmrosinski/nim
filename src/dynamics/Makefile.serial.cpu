@@ -24,6 +24,9 @@ vdmints3.o: solveiThLS3.o vdmints3.F90
 vdmintsv5.o: solveiThLS5.o vdmintsv5.F90
 	$(CPP) $(CPP_FLAGS) $(MODDIRS) $*.F90 > $*.f90
 	$(FCserial) -c $(FFLAGS) $(SFLAGS) $(MODDIRS) $(INLINE) $*.f90
+vdmfinish.o: vdmfinish.F90
+	$(CPP) $(CPP_FLAGS) $(MODDIRS) $*.F90 > $*.f90
+	$(FCserial) $(GPTLINCLUDE) -c $(FFLAGS) $(SFLAGS) $(MODDIRS) $(INLINE) $*.f90
 # The lapack stuff is only needed for initialization, and -O3 causes problems
 # on MIC, so lower the opt level
 

@@ -14,6 +14,8 @@ subroutine vdmfinish(npp,nvars,ims,ime,ips,ipe,nprox,rebb,tebb,reb,ca4k,ca4p,bed
 !       Final loops of vdm.F90 after calls to vdmints()
 !       Jin Lee                  December, 2008
 !**************************************************************************
+use gptl
+use gptl_acc
 use kinds, only: rt
 use ReadNamelist, only: nz
 implicit none
@@ -29,9 +31,23 @@ real(rt),intent(INOUT) :: sedgvar(  nz,npp,nvars,ims:ime)
 real(rt),intent(  OUT) :: uw8s   (  nz,npp,2,ims:ime)
 real(rt),intent(  OUT) :: uw8b   (0:nz,    ims:ime,    3)
 integer ipn,k,isn
+logical, save          :: first = .true.
+integer, save          :: vdmfinish_handle
+integer                :: ret
+
+  if (first) then
+    first = .false.
+!$acc parallel private(ret) copyout(vdmfinish_handle)
+    ret = gptlinit_handle_gpu ('vdmfinish', vdmfinish_handle)
+!$acc end parallel
+  end if
+
+!$acc parallel private(ret) copyin(vdmfinish_handle)
+  ret = gptlstart_gpu (vdmfinish_handle)
+!$acc end parallel
 
 !DIR$ ASSUME_ALIGNED reb:64, ca4k:64, ca4p:64, sedgvar:64
-!$acc parallel vector_length(96)!
+!$acc parallel vector_length(96) private(ret) copyin(vdmfinish_handle)
 !$acc loop gang
 !$OMP PARALLEL DO PRIVATE(k,isn) SCHEDULE(runtime)
 do ipn=ips,ipe
@@ -69,6 +85,9 @@ end do
 !$OMP END PARALLEL DO
 !$acc end parallel
 
+!$acc parallel private(ret) copyin(vdmfinish_handle)
+ret = gptlstop_gpu (vdmfinish_handle)
+!$acc end parallel
 return
 end subroutine vdmfinish
 !**************************************************************************

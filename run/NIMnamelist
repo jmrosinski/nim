@@ -27,7 +27,7 @@
    RestartBegin        = 0       ! Begin restart if .ne.0
    ForecastLength      = 1000    ! Total number of timesteps (100/day),(2400/hr),(2400*60/min), (9600/ts)
    ArchvIntvl          = 1000     ! Archive interval (in ArchvTimeUnit) to do output  (10-day), (240-hr), (240*60-min), (960-ts)
-   writeOutput         = .false.  ! set to .true. for verification
+   writeOutput         = .true.  ! set to .true. for verification
    minmaxPrintInterval = 100     ! Interval to print out MAXs and MINs
    PrintIpnDiag        = -1      ! ipn at which to print diagnostics (-1 means no print)
    physics             = 'none'  ! GFS or none for no physics
