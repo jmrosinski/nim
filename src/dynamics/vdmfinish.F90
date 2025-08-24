@@ -48,7 +48,7 @@ integer                :: ret
 
 !DIR$ ASSUME_ALIGNED reb:64, ca4k:64, ca4p:64, sedgvar:64
 !$acc parallel vector_length(96) private(ret) copyin(vdmfinish_handle)
-!$acc loop gang
+!$acc loop gang worker
 !$OMP PARALLEL DO PRIVATE(k,isn) SCHEDULE(runtime)
 do ipn=ips,ipe
   bedgvar(0,ipn,3) = 0._rt

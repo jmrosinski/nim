@@ -13,7 +13,11 @@ if [ test ! -x $nimrelpath ]; then
   exit 1
 fi
 
-rundir=../run_$$
+echo "Enter text describing this experiment"
+read txt
+
+rundir=../run_${txt}_$$
+echo rundir is $rundir
 if [ -d $rundir ]; then
   echo "directory $rundir already exists"
   exit 1
@@ -25,5 +29,5 @@ cd $rundir
 ln -s /data1/spiralOverlap/data/FV3DAT/G3D_G05K096.dat ./g3d.dat
 ln -s /data1/spiralOverlap/data/FV3DAT/STD_G05K096.txt ./STD.txt
 ln -s /data1/spiralOverlap/data/ATMDAT/ini_G05K096.dat ./ini.dat
-./nim
+./nim 2>&1 | tee stdout
 exit 0
