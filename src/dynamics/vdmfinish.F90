@@ -15,7 +15,9 @@ subroutine vdmfinish(npp,nvars,ims,ime,ips,ipe,nprox,rebb,tebb,reb,ca4k,ca4p,bed
 !       Jin Lee                  December, 2008
 !**************************************************************************
 use gptl
+#ifdef _OPENACC
 use gptl_acc
+#endif
 use kinds, only: rt
 use ReadNamelist, only: nz
 implicit none
@@ -35,6 +37,7 @@ logical, save          :: first = .true.
 integer, save          :: vdmfinish_handle
 integer                :: ret
 
+#ifdef _OPENACC
   if (first) then
     first = .false.
 !$acc parallel private(ret) copyout(vdmfinish_handle)
@@ -45,6 +48,7 @@ integer                :: ret
 !$acc parallel private(ret) copyin(vdmfinish_handle)
   ret = gptlstart_gpu (vdmfinish_handle)
 !$acc end parallel
+#endif
 
 !DIR$ ASSUME_ALIGNED reb:64, ca4k:64, ca4p:64, sedgvar:64
 !$acc parallel vector_length(96) private(ret) copyin(vdmfinish_handle)
@@ -85,9 +89,11 @@ end do
 !$OMP END PARALLEL DO
 !$acc end parallel
 
+#ifdef _OPENACC
 !$acc parallel private(ret) copyin(vdmfinish_handle)
 ret = gptlstop_gpu (vdmfinish_handle)
 !$acc end parallel
+#endif
 return
 end subroutine vdmfinish
 !**************************************************************************

@@ -24,7 +24,9 @@ subroutine force(ims,ime,ips,ipe,vol,f,ur,vr,fu0,fv0,fw0,tfur,tfvr,tfwr)
 !*********************************************************************
 
 use gptl
+#ifdef _OPENACC
 use gptl_acc
+#endif
 use kinds, only: rt
 use ReadNamelist, only: nz
 implicit none
@@ -44,32 +46,40 @@ integer                :: ret, ret2
 integer                :: force_handle
 integer                :: force_ipn_handle
 
+#ifdef _OPENACC
 !$acc parallel private(ret) copyout(force_handle,force_ipn_handle)
   ret = gptlinit_handle_gpu ('force', force_handle)
   ret = gptlinit_handle_gpu ('force_ipn', force_ipn_handle)
   ret = gptlstart_gpu (force_handle)
 !$acc end parallel
+#endif
 
 !$OMP PARALLEL DO PRIVATE(k)
 !$acc parallel private(ret2) num_workers(PAR_WRK) vector_length(VEC_LEN) &
 !$acc&         copyin (force_ipn_handle)  
 !$acc loop gang
 do ipn=ips,ipe
+#ifdef _OPENACC
   ret2 = gptlstart_gpu(force_ipn_handle)
+#endif
  !$acc loop vector
   do k=1,NZ
     tfur(k,ipn) = tfur(k,ipn) + fu0(k,ipn)/vol(k,ipn) + f(ipn)*vr(k,ipn)
     tfvr(k,ipn) = tfvr(k,ipn) + fv0(k,ipn)/vol(k,ipn) - f(ipn)*ur(k,ipn)
     tfwr(k,ipn) = tfwr(k,ipn) + fw0(k,ipn)/vol(k,ipn)
   end do
+#ifdef _OPENACC
   ret2 = gptlstop_gpu(force_ipn_handle)
+#endif
 end do
 !$acc end parallel
 !$OMP END PARALLEL DO
 
+#ifdef _OPENACC
 !$acc parallel private(ret) copyin (force_handle)
 ret = gptlstop_gpu (force_handle)
 !$acc end parallel
+#endif
 
 return
 end subroutine force

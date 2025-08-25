@@ -40,7 +40,7 @@ character(len=64) :: fn  ! file name
              ret = gptlstart('Init')
 
 ! initialize diagnostic array
-diagt1d(:,:) = 0.
+!diagt1d(:,:) = 0.   !JR This array was never allocated so causes problems in gfortran
 
 !....................................................................
 !  Runge-Kutta scheme parameters

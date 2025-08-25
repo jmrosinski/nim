@@ -1,0 +1,102 @@
+! Selection of ComputeTasks: For process counts which exceed 10, best
+! performance will be ComputeTasks = 10*(4**n), where n is an integer 
+! greater than or equal to 0. For low process counts (i.e. fewer than
+! ComputeTasks=10), reasonable choices are ComputeTasks = 1, 2, or 5. 
+! These are good choices because they divide evenly into 10.
+
+ &COMPUTETASKnamelist
+   ComputeTasks = 1          ! Compute tasks for NIM
+/
+
+ &QUEUEnamelist
+   MaxQueueTime = '00:06:00' ! Run time for the complete job (HH:MM:SS)
+! Use this one for endeavor--seems to only like minutes
+!   MaxQueueTime = '30' ! Run time for the complete job (minutes)
+   DataDir = "/data1/spiralOverlap/data"
+/
+
+! glvl sets the horizontal resolution. Use glvl=6 for low resolution, 
+! and glvl=9 for high resolution
+
+ &CNTLnamelist
+   glvl                = 5       ! Grid level
+   gtype               = 2       ! Grid type: Standard recursive (0), Modified recursive (2), Modified great circle (3)
+   SubdivNum           = 2 2 2 2 2 2 2 2 2 2 2 2 ! subdivision number for each recursive refinement  
+   ArchvTimeUnit       = 'ts'    ! ts:timestep; hr:hour dy:day
+   itsbeg              = 1   
+   RestartBegin        = 0       ! Begin restart if .ne.0
+   ForecastLength      = 3    ! Total number of timesteps (100/day),(2400/hr),(2400*60/min), (9600/ts)
+   ArchvIntvl          = 1     ! Archive interval (in ArchvTimeUnit) to do output  (10-day), (240-hr), (240*60-min), (960-ts)
+   writeOutput         = .true.  ! set to .true. for verification
+   minmaxPrintInterval = 1     ! Interval to print out MAXs and MINs
+   PrintIpnDiag        = -1      ! ipn at which to print diagnostics (-1 means no print)
+   physics             = 'none'  ! GFS or none for no physics
+   yyyymmddhhmm = "200707170000" ! Date of the model run
+   pertlim             = 0.      ! Perturbation bound for initial temperature (1.e-7 is good for 32-bit roundoff)
+   powDouble           = .false. ! Double precision power function, see ReadNamelist.F90
+   vdmint_combine      = 3       ! CPU & GPU optimziation, see ReadNamelist.F90
+   read_amtx           = .false. ! false means NIM computes amtx* arrays (MUCH faster than reading from a file!)
+   pin_to_single_core  = .true.  ! true means pin each MPI rank to a single core, false means pin to a socket
+   root_on_socket1     = .true.  ! true means place the root process on socket 1 (on FGE socket 1 has the Mellanox card)
+   outputBarrier       = .false. ! true means call a barrier before output
+   preExchangeBarrier  = .false.
+   postExchangeBarrier = .false.
+/
+
+ &POSTnamelist
+  numvars       = 7
+  var_list      = "uZZZ vZZZ wZZZ trpZ pZZZ tZZZ qvZZ"
+  vert_cord     = 'P'            ! S,Z,P
+  projection    = 'G'            ! 'G/global', 'LP/limited area polar stereographic proj'
+  center_lat    = 45.
+  center_lon    = 270.
+  gptx          = 64
+  gpty          = 64
+  xlen          = 2.5e6
+  ylen          = 2.5e6
+/
+
+ &PLTVARnamelist
+/
+
+ &PLTICOSnamelist
+/
+
+! The icosio library allows optional creation of a separate group of MPI 
+! "write tasks" to speed up model output by overlapping disk writes with 
+! computation.  These are specified in TASKnamelist along with switches to 
+! control their behavior and distribution over nodes.  Number of OpenMP 
+! threads and distribution of compute tasks over nodes is also specified in 
+! TASKnamelist.  See src/utils/taskinfo.F90 for a full description of 
+! these settings.
+!
+! For pure-MIC runs, ensure max_compute_tasks_per_mic matches 
+! max_compute_tasks_per_node. The number of OMP threads used on each MIC MPI
+! task will be omp_threads_per_mic_mpi_task. The choice of:
+! max_compute_tasks_per_mic * omp_threads_per_mic_mpi_task 
+! should be close to the total number of thread contexts available (240 is a
+! good choice).  
+!
+! For symmetric runs, (i.e. a host is involved in the computations along with
+! a MIC (max_compute_tasks_per_node - max_compute_tasks_per_mic) x omp_threads_per_compute_task
+! should match the number of host cores per node. E.g. on SNB with 16 cores,
+! a good choice is 2 host tasks per node (max_compute_tasks_per_node minus
+! max_compute_tasks_per_mic = 2) and 8 threads per MPI task. 
+!
+! For GPU runs, set max_accelerators_per_node, and max_compute_tasks_per_node to
+! the number of GPUs per node you wish to run. These values should be equivalent
+! for GPU only runs.  The Max_accelerators_per_node field may be a value that
+! is less than the number available on a node.  The optimimal value may be 
+! dependent on the architecture of the node, inter-process communications load, 
+! and other factors
+
+ &TASKnamelist
+   cpu_cores_per_node = 20
+   max_compute_tasks_per_node = 20
+   num_write_tasks = 0
+   max_write_tasks_per_node = 1
+   root_own_node = .false.
+   icosio_debugmsg_on = .false.
+   max_accelerators_per_node = 1
+/
+

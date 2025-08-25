@@ -23,7 +23,9 @@ subroutine vdmints3(rp,tp,trp,teb,sedgvar,bedgvar,nvars,nvi,amtx1,nbf,npp,ims,im
 !**********************************************************************
 
 use gptl
+#ifdef _OPENACC
 use gptl_acc
+#endif
 use kinds, only: rt
 use ReadNamelist, only: nz
 use openacc
@@ -62,11 +64,9 @@ logical, save :: first = .true.
 
 !$acc routine(solveiThLS3) vector
 
-#define INNER_TIMERS
-
+#ifdef _OPENACC
 if (first) then
   first = .false.
-  ret = gptlstart('vdmints3_sethandles'//char(0))
 !$acc parallel private(ret) copyout(vdmints3_handle, ipn_handle, kloop1_handle, kloop2_handle, &
 !$acc&                              k3_handle, k4_handle, isn1_handle, isn2_handle, &  
 !$acc&                              scalar_handle, solvei_handle)
@@ -82,29 +82,25 @@ if (first) then
   ret = gptlinit_handle_gpu ('vdmints3_solvei', solvei_handle)
   ret = gptlstart_gpu (vdmints3_handle)
 !$acc end parallel
-  ret = gptlstop('vdmints3_sethandles'//char(0))
 else
 !$acc parallel private(ret) copyin(vdmints3_handle)
   ret = gptlstart_gpu (vdmints3_handle)
 !$acc end parallel
 end if
+#endif
 
 nv2=nvi+1
 nv3=nvi+2
-#ifdef INNER_TIMERS
 !$acc parallel private(ret) num_workers(3) vector_length(32), &
 !$acc&         copyin(ipn_handle, kloop1_handle, kloop2_handle, k3_handle, isn1_handle, &
 !$acc&                isn2_handle, scalar_handle, solvei_handle)
-#else
-!$acc parallel private(ret) num_workers(PAR_WRK) vector_length(VEC_LEN)
-#endif
 
 !$acc loop gang private(rhs1,rhs2,rhs3,Tgt1,Tgt2,Tgt3)
 
 !$OMP PARALLEL DO PRIVATE(mythread,ret,k,rhs1,rhs2,rhs3,isn,tgtc,tgt1,tgt2, &
 !$OMP                     tgt3,isp,xyc1,xyc2) SCHEDULE(runtime)
 do ipn=ips,ipe
-#ifdef INNER_TIMERS
+#ifdef _OPENACC
   ret = gptlstart_gpu (ipn_handle)
   ret = gptlstart_gpu (kloop1_handle)
 #endif
@@ -144,7 +140,7 @@ do ipn=ips,ipe
     rhs3(k,9) = ca4k(k)*trp(k,ipn)+ca4p(k)*trp(k+1,ipn) - trp(k,ipn)
   enddo !k-loop
   enddo !k-loop
-#ifdef INNER_TIMERS
+#ifdef _OPENACC
   ret = gptlstop_gpu (kloop1_handle)
   ret = gptlstart_gpu(scalar_handle)
 #endif
@@ -176,7 +172,7 @@ do ipn=ips,ipe
   rhs3(k+1,7) = trp(k+1,prox(4         ,ipn)) - trp(k,ipn)
   rhs3(k+1,8) = trp(k+1,prox(nprox(ipn),ipn)) - trp(k,ipn)
   rhs3(k+1,9) = ca4k(k)*trp(k,ipn)+ca4p(k)*trp(k+1,ipn) - trp(k,ipn)    
-#ifdef INNER_TIMERS
+#ifdef _OPENACC
   ret = gptlstop_gpu (scalar_handle)
   ret = gptlstart_gpu(solvei_handle)
 #endif
@@ -184,7 +180,7 @@ do ipn=ips,ipe
   do startk=1,NZ,32
     CALL solveiThLS3(nob,nbf,rhs1,rhs2,rhs3,amtx1(1,1,ipn),startk)
   end do
-#ifdef INNER_TIMERS
+#ifdef _OPENACC
   ret = gptlstop_gpu(solvei_handle)
   ret = gptlstart_gpu(isn1_handle)
 #endif
@@ -223,7 +219,7 @@ do ipn=ips,ipe
     enddo !k-loop
   end do  ! isn-loop
 
-#ifdef INNER_TIMERS
+#ifdef _OPENACC
   ret = gptlstop_gpu(isn1_handle)
   ret = gptlstart_gpu(isn2_handle)
 #endif
@@ -243,7 +239,7 @@ do ipn=ips,ipe
 !      ret = gptlstop_gpu(k3_handle)
     end do
 
-#ifdef INNER_TIMERS
+#ifdef _OPENACC
     ret = gptlstart_gpu (scalar_handle)
 #endif
     sedgvar( 1,isn,nvi,ipn)=(zm(1,ipn)-zm(3,ipn))/(zm(2,ipn)-zm(3,ipn))*sedgvar(2,isn,nvi,ipn) &
@@ -255,7 +251,7 @@ do ipn=ips,ipe
     sedgvar(NZ,isn,nvi,ipn)=2._rt*sedgvar(NZ-1,isn,nvi,ipn)-sedgvar(NZ-2,isn,nvi,ipn)
     sedgvar(NZ,isn,nv2,ipn)=2._rt*sedgvar(NZ-1,isn,nv2,ipn)-sedgvar(NZ-2,isn,nv2,ipn)
     sedgvar(NZ,isn,nv3,ipn)=2._rt*sedgvar(NZ-1,isn,nv3,ipn)-sedgvar(NZ-2,isn,nv3,ipn)
-#ifdef INNER_TIMERS
+#ifdef _OPENACC
     ret = gptlstop_gpu (scalar_handle)
 #endif
 !$acc loop vector
@@ -264,7 +260,7 @@ do ipn=ips,ipe
     enddo
   end do  ! isn-loop
 
-#ifdef INNER_TIMERS
+#ifdef _OPENACC
   ret = gptlstop_gpu(isn2_handle)
   ret = gptlstart_gpu(k4_handle)
 #endif
@@ -275,7 +271,7 @@ do ipn=ips,ipe
     bedgvar(k,ipn,nv2)=ca4k(k)* tp(k,ipn)+ca4p(k)* tp(k+1,ipn)
     bedgvar(k,ipn,nv3)=ca4k(k)*trp(k,ipn)+ca4p(k)*trp(k+1,ipn)
   end do
-#ifdef INNER_TIMERS
+#ifdef _OPENACC
   ret = gptlstop_gpu(k4_handle)
   ret = gptlstart_gpu(scalar_handle)
 #endif
@@ -289,7 +285,7 @@ do ipn=ips,ipe
   bedgvar(NZ,ipn,nv2)=ca4k(NZ)* tp(NZ,ipn)+ca4p(NZ)* tp(NZ,ipn)
   bedgvar(NZ,ipn,nv3)=ca4k(NZ)*trp(NZ,ipn)+ca4p(NZ)*trp(NZ,ipn)
 
-#ifdef INNER_TIMERS
+#ifdef _OPENACC
   ret = gptlstop_gpu(scalar_handle)
   ret = gptlstop_gpu(ipn_handle)
 #endif
@@ -297,9 +293,11 @@ enddo !ipn-loop
 !$acc end parallel
 !$OMP END PARALLEL DO
 
+#ifdef _OPENACC
 !$acc parallel private(ret) copyin(vdmints3_handle)
 ret = gptlstop_gpu (vdmints3_handle)
 !$acc end parallel
+#endif
 
 return
 end subroutine vdmints3

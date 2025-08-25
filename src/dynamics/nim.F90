@@ -57,8 +57,10 @@ ret = gptlsetoption (gptlverbose, 1)
 !ret = gptlsetoption (gptlmaxwarps_gpu, 448)   ! for flatten
 ! This one is the highest number that works
 !ret = gptlsetoption (gptlmaxwarps_gpu, 983187)
+#ifdef _OPENACC
 ret = gptlsetoption (gptlmaxwarps_gpu, 30724)
 ret = gptlsetoption (gptlmaxtimers_gpu, 20)
+#endif
 ! This one seems to hang
 !ret = gptlsetoption (gptlmaxthreads_gpu, 1573248)
 !ret = gptlsetoption (gptlmaxthreads_gpu, 65552)

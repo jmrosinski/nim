@@ -25,7 +25,9 @@ subroutine vdmints0(w,sedgvar,bedgvar,nvars,nvi,amtx2,nbf,npp,ims,ime,nob,&
 use kinds, only: rt
 use ReadNamelist, only: nz
 use gptl
+#ifdef _OPENACC
 use gptl_acc
+#endif
 implicit none
 integer,intent (IN)    :: nvi,npp,ims,ime,nvars,nob,nbf,ips,ipe
 integer,intent (IN)    :: nprox(           ims:ime) ! holds number of proximity points
@@ -59,6 +61,7 @@ integer                :: startk
 
 !$acc routine(solveiThLS0) vector
 
+#ifdef _OPENACC
   if (first) then
     first = .false.
 !$acc parallel private(ret) copyout(vdmints0_handle, ipn_handle, solvei_handle)
@@ -71,13 +74,16 @@ integer                :: startk
 !$acc parallel private(ret) copyin(vdmints0_handle)
   ret = gptlstart_gpu (vdmints0_handle)
 !$acc end parallel
+#endif
 
 !DIR$ ASSUME_ALIGNED ca4k:64, ca4p:64, sedgvar:64
 !$acc parallel private(ret) num_workers(PAR_WRK) vector_length(VEC_LEN) copyin(ipn_handle,solvei_handle)
 !$acc loop gang private(rhs,Tgt)
 !$OMP PARALLEL DO PRIVATE(mythread,ret,k,rhs,i,isn,tgtc,tgt,isp,ism,xyc1,xyc2) SCHEDULE(runtime)
 do ipn=ips,ipe
+#ifdef _OPENACC
   ret = gptlstart_gpu (ipn_handle)
+#endif
 !$acc cache(rhs,tgt)
 #ifdef FINEGRAINED_TIMING
   mythread = omp_get_thread_num ()
@@ -102,13 +108,17 @@ do ipn=ips,ipe
     rhs(1,i)=0._rt
   enddo
 
+#ifdef _OPENACC
   ret = gptlstart_gpu (solvei_handle)
+#endif
 !$acc loop worker
   do startk=1,NZ-1,32
     CALL solveiThLS0(nob,nbf,rhs,amtx2(0,1,ipn),ipn,ips,startk)
   end do
+#ifdef _OPENACC
   ret = gptlstop_gpu (solvei_handle)
-
+#endif
+  
 !JR Defining temporary variables xyc1 and xyc2 prevents ifort from swapping the k and isn loops below
 !$acc loop worker private(xyc1,xyc2)
   do isn = 1,nprox(ipn)
@@ -152,7 +162,9 @@ do ipn=ips,ipe
     ret = gptlstop_handle ('vdmints0_inside', handle)
   end if
 #endif
+#ifdef _OPENACC
   ret = gptlstop_gpu (ipn_handle)
+#endif
 enddo !ipn-loop
 !$acc end parallel
 
@@ -161,9 +173,11 @@ enddo !ipn-loop
 ret = gptlstop ('vdmints0_outside')
 #endif
 
+#ifdef _OPENACC
 !$acc parallel private(ret) copyin(vdmints0_handle)
 ret = gptlstop_gpu (vdmints0_handle)
 !$acc end parallel
+#endif
 
 return
 end subroutine vdmints0
